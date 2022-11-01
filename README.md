@@ -13,3 +13,31 @@ Uses [docparser](https://github.com/eudoxia0/docparser).
 Maturity is low - I only made it to generate an OK doc
 for cl+ssl. If you try it for other library, you may need
 to improve something.
+
+
+Example:
+
+
+```common-lisp
+
+
+(pushnew "/home/anton/prj/package-doc-dump/" asdf:*central-registry* :test #'equal)
+(ql:quickload "package-doc-dump")
+
+(pushnew "/home/anton/prj/cl+ssl/cl-plus-ssl/" asdf:*central-registry* :test #'equal)
+(ql:quickload "cl+ssl")
+
+(package-doc-dump:dump-html "cl+ssl"
+                            (asdf:system-relative-pathname "cl+ssl"
+                                                           "src/package.lisp")
+                            ;; Remove the implementation of cl+ssl:stream-fd,
+                            ;; like on CCL `stream-fd ((stream ccl::basic-stream))`,
+                            ;; so only the generic function reamins.
+                            :doc-node-filter (lambda (doc-node)
+                                               (not (and (typep doc-node 'docparser:method-node)
+                                                         (string-equal (docparser:node-name doc-node)
+                                                                       "stream-fd")))))
+
+=> #P"/home/anton/prj/cl+ssl/cl-plus-ssl/src/package.html"
+
+```
