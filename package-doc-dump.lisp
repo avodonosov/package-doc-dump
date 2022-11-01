@@ -255,9 +255,10 @@ Desctructive - can modify the DOC-NODES."
                               output-file
                               doc-node-filter
                               package-filter)
-  (with-open-file (out (or output-file
-                           (make-pathname :type "html"
-                                          :defaults lisp-file))
+  (unless output-file
+    (setq output-file (make-pathname :type "html"
+                                     :defaults lisp-file)))
+  (with-open-file (out output-file
                        :direction :output
                        :element-type *utf-8-compatible-character-type*
                        :external-format *utf-8-external-format*
@@ -267,7 +268,8 @@ Desctructive - can modify the DOC-NODES."
                             lisp-file
                             :doc-node-filter doc-node-filter
                             :package-filter package-filter)
-     out)))
+     out))
+  output-file)
 
 
 
