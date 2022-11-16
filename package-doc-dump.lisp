@@ -214,6 +214,11 @@ Desctructive - can modify the DOC-NODES."
              (prin1 (docparser:cffi-function-return-type operator-node)
                     out)))))))
 
+;; We use markdown intermediate representaiton
+;; because initially it was the idea - geterate
+;; markdown file which can be read at github.
+;; Keeping that for the case if I want markdown
+;; someday.
 (defun markdown-package-docs (docparser-docs lisp-file
                               &key (with-headers nil)
                                 package-filter
@@ -248,7 +253,10 @@ Desctructive - can modify the DOC-NODES."
                                      (md-escape (node-lambda-list-str node))))
                            (format out "~%")
                            (when docstring
-                             (format out "~%~A~%" (md-escape docstring)))))))))))))
+                             (format out "~%```~%~A~%```~%"
+                                     ;; TODO: escape triple backquotes
+                                     ;;       inside the docstring
+                                     docstring))))))))))))
 
 (defun render-package-html (docparser-docs lisp-file
                             &key
@@ -263,12 +271,14 @@ Desctructive - can modify the DOC-NODES."
                        :element-type *utf-8-compatible-character-type*
                        :external-format *utf-8-external-format*
                        :if-exists :supersede)
-    (3bmd:parse-string-and-print-to-stream
-     (markdown-package-docs docparser-docs
-                            lisp-file
-                            :doc-node-filter doc-node-filter
-                            :package-filter package-filter)
-     out))
+    (let ((3bmd-code-blocks:*code-blocks* t)
+          (3bmd-code-blocks:*code-blocks-default-colorize* nil))
+      (3bmd:parse-string-and-print-to-stream
+       (markdown-package-docs docparser-docs
+                              lisp-file
+                              :doc-node-filter doc-node-filter
+                              :package-filter package-filter)
+       out)))
   output-file)
 
 
@@ -286,6 +296,8 @@ Desctructive - can modify the DOC-NODES."
 
 #| TODO:
 
+- add a timestimp to the resulting doc
+- wrap the result into <html><body> </body></html> and other tags (title, charset, lang)?
 + escape markdown (at least stars in variable names)
 + print empty lambda lists as () instead of NIL
 + deduplicate `function` and `foreing-function`
