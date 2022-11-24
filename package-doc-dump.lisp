@@ -62,12 +62,15 @@ returned in the same order as they are read."
             (push form result))))
     (nreverse result)))
 
-(defun defpackage-forms-of (package-lisp-file)
-  (with-open-file (in package-lisp-file
-                      :direction :input
-                      :element-type *utf-8-compatible-character-type*
-                      :external-format *utf-8-external-format*)
-    (defpackage-forms in)))
+(defun defpackage-forms-of (package-lisp-files)
+  (apply #'append
+         (mapcar (lambda (lisp-file)
+                   (with-open-file (in lisp-file
+                                       :direction :input
+                                       :element-type *utf-8-compatible-character-type*
+                                       :external-format *utf-8-external-format*)
+                     (defpackage-forms in)))
+                 package-lisp-files)))
 
 ;;; Try:
 ;;
@@ -229,12 +232,12 @@ Desctructive - can modify the DOC-NODES."
 ;; markdown file which can be read at github.
 ;; Keeping that for the case if I want markdown
 ;; someday.
-(defun markdown-package-docs (docparser-docs lisp-file
+(defun markdown-package-docs (docparser-docs lisp-files
                               &key (with-headers nil)
                                 package-filter
                                 doc-node-filter)
   (with-output-to-string (out)
-    (dolist (defpackage-form (defpackage-forms-of lisp-file))
+    (dolist (defpackage-form (defpackage-forms-of lisp-files))
       (let ((package-name (second defpackage-form))
             (package-doc (defpackage-documentation defpackage-form)))
         (unless (and package-filter (not (funcall package-filter package-name)))
@@ -273,14 +276,14 @@ Desctructive - can modify the DOC-NODES."
                                      ;;       inside the docstring
                                      docstring))))))))))))
 
-(defun render-package-html (docparser-docs lisp-file
+(defun render-package-html (docparser-docs lisp-files
                             &key
                               output-file
                               doc-node-filter
                               package-filter)
   (unless output-file
     (setq output-file (make-pathname :type "html"
-                                     :defaults lisp-file)))
+                                     :defaults (first lisp-files))))
   (with-open-file (out output-file
                        :direction :output
                        :element-type *utf-8-compatible-character-type*
@@ -290,21 +293,25 @@ Desctructive - can modify the DOC-NODES."
           (3bmd-code-blocks:*code-blocks-default-colorize* nil))
       (3bmd:parse-string-and-print-to-stream
        (markdown-package-docs docparser-docs
-                              lisp-file
+                              lisp-files
                               :doc-node-filter doc-node-filter
                               :package-filter package-filter)
        out)))
   output-file)
 
 
+(defun ensure-list (val)
+  (if (listp val)
+      val
+      (list val)))
 
 (defun dump-html (system-or-list
-                  package-defining-lisp-file
+                  package-defining-lisp-file/s
                   &key output-file
                     doc-node-filter
                     package-filter)
   (render-package-html (parse-docs system-or-list)
-                       package-defining-lisp-file
+                       (ensure-list package-defining-lisp-file/s)
                        :output-file output-file
                        :doc-node-filter doc-node-filter
                        :package-filter package-filter))
