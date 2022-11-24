@@ -214,6 +214,16 @@ Desctructive - can modify the DOC-NODES."
              (prin1 (docparser:cffi-function-return-type operator-node)
                     out)))))))
 
+(defun defpackage-documentation (defpackage-form)
+  (let* ((options (cddr defpackage-form)))
+    (second (assoc :documentation options :test #'eq))))
+
+(assert (string= "test doc"
+                 (defpackage-documentation '(defpackage #:somepkg
+                                             (:use #:common-lisp)
+                                             (:documentation "test doc")
+                                             (:export #:func-1 #:func-2)))))
+
 ;; We use markdown intermediate representaiton
 ;; because initially it was the idea - geterate
 ;; markdown file which can be read at github.
@@ -225,9 +235,14 @@ Desctructive - can modify the DOC-NODES."
                                 doc-node-filter)
   (with-output-to-string (out)
     (dolist (defpackage-form (defpackage-forms-of lisp-file))
-      (let ((package-name (second defpackage-form)))
+      (let ((package-name (second defpackage-form))
+            (package-doc (defpackage-documentation defpackage-form)))
         (unless (and package-filter (not (funcall package-filter package-name)))
           (format out "# Package ~A~%~%" package-name)
+          (when package-doc
+            ;; TODO: escape triple backquotes
+            ;;       inside the package-doc
+            (format out "~%```~%~A~%```~%~%" package-doc))
           (dolist (symbol (all-exported defpackage-form))
             (let* ((symbol-docs (docparser:query docparser-docs
                                                  :package-name package-name
