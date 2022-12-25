@@ -23,24 +23,39 @@
   (:use cl))
 
 ;; Temporarily, until https://github.com/eudoxia0/docparser/pull/31
-;; is released:
+;; is released and
+;; https://github.com/eudoxia0/docparser/issues/34
+;; is fixed and released:
 (in-package :docparser)
-(define-parser cffi:defcfun (name-and-options return-type &rest args)
-  (let ((name (if (listp name-and-options)
-                  (first (remove-if-not #'symbolp name-and-options))
-                  name-and-options))
-        (docstring (if (stringp (first args))
-                       (first args)
-                       nil))
-        (args (if (stringp (first args))
-                  (rest args)
-                  args)))
-    (make-instance 'cffi-function
-                   :name name
-                   :docstring docstring
-                   :return-type return-type
-                   :lambda-list args)))
 
+(defclass cffi-function (cffi-node function-node)
+  ((foreign-name :reader cffi-function-foreign-name
+                 :initarg :foreign-name
+                 :type string
+                 :documentation "The function's foreign name.")
+   (return-type :reader cffi-function-return-type
+                :initarg :return-type
+                :documentation "The function's return type."))
+  (:documentation "A C function."))
+
+(eval-when (:load-toplevel :compile-toplevel :execute)
+  (export 'cffi-function-foreign-name))
+
+(define-parser cffi:defcfun (name-and-options return-type &rest args)
+  (multiple-value-bind (lisp-name foreign-name)
+      (cffi::parse-name-and-options name-and-options)
+    (let ((docstring (if (stringp (first args))
+                         (first args)
+                         nil))
+          (args (if (stringp (first args))
+                    (rest args)
+                    args)))
+      (make-instance 'cffi-function
+                     :name lisp-name
+                     :foreign-name foreign-name
+                     :docstring docstring
+                     :return-type return-type
+                     :lambda-list args))))
 
 (in-package #:package-doc-dump)
 
@@ -134,10 +149,14 @@ Desctructive - can modify the DOC-NODES."
 (defun node-name-str (docparser-node)
   (let ((name-str (string-downcase
                    (symbol-name (docparser:node-name docparser-node)))))
-    (if (and (typep docparser-node 'docparser:operator-node)
-             (docparser:operator-setf-p docparser-node))
-        (format nil "(setf ~A)" name-str)
-        name-str)))
+    (cond ((and (typep docparser-node 'docparser:operator-node)
+                 (docparser:operator-setf-p docparser-node))
+           (format nil "(setf ~A)" name-str))
+          ((typep docparser-node 'docparser:cffi-function)
+           (format nil "(~A ~S)"
+                   name-str
+                   (docparser:cffi-function-foreign-name docparser-node)))
+          (t name-str))))
 
 
 
