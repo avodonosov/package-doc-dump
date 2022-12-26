@@ -295,6 +295,21 @@ Desctructive - can modify the DOC-NODES."
                                      ;;       inside the docstring
                                      docstring))))))))))))
 
+(defun cur-timestamp-str ()
+  (multiple-value-bind
+        (second minute hour day month year day-of-week dst-p tz)
+      (decode-universal-time (get-universal-time))
+    (declare (ignore day-of-week))
+    (format nil "~4,'0d-~2,'0d-~2,'0d ~2,'0d:~2,'0d:~2,'0d (GMT~@d~@[, DST~])"
+            year
+	    month
+	    day
+	    hour
+	    minute
+	    second
+	    (- tz)
+            dst-p)))
+
 (defun render-package-html (docparser-docs lisp-files
                             &key
                               output-file
@@ -315,9 +330,10 @@ Desctructive - can modify the DOC-NODES."
                               lisp-files
                               :doc-node-filter doc-node-filter
                               :package-filter package-filter)
-       out)))
+       out))
+    (format out "<hr/>~%")
+    (format out "Generated with package-doc-dump, ~A~%" (cur-timestamp-str)))
   output-file)
-
 
 (defun ensure-list (val)
   (if (listp val)
@@ -337,7 +353,7 @@ Desctructive - can modify the DOC-NODES."
 
 #| TODO:
 
-- add a timestimp to the resulting doc
++ add a timestimp to the resulting doc
 - wrap the result into <html><body> </body></html> and other tags (title, charset, lang)?
 + escape markdown (at least stars in variable names)
 + print empty lambda lists as () instead of NIL
