@@ -44,4 +44,4 @@ Example:
 
 Usage from GitHub Actions:
 https://github.com/cl-plus-ssl/cl-plus-ssl/blob/master/.github/workflows/api-doc.yml
-It generates and publishes the following doc: https://cl-plus-ssl.github.io/cl-plus-ssl//cl-plus-ssl-api.html
+It generates and publishes the following doc: https://cl-plus-ssl.github.io/cl-plus-ssl/cl-plus-ssl-api.html
