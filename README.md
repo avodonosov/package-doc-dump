@@ -1,11 +1,13 @@
 Simple API doc generator - dumps to an HTML file
 the names, docstrings, lambda lists of public
 symbols in the specified packages.
-In the order the symbols are listed in the defpackage forms.
+In the order the symbols are listed in the top-level
+`(defpackage ... (:export ...))`
+forms and in top-level calls of `(export '( ... ))`.
 
 It is similar to other API doc generators, like CL-API,
 but I want the symbols to be listed in the order they 
-are listed in the `defpackage` forms, assuming the authros
+are listed by the authros, assuming the authros
 order them logically and conveniently for readrs.
 
 Uses [docparser](https://github.com/eudoxia0/docparser).
